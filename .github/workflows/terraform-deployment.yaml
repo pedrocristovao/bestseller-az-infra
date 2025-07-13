@@ -43,10 +43,6 @@ jobs:
         run: terraform init
         working-directory: triage
 
-      - name: Terraform State Pull #TEMPORARY
-        run: terraform state pull
-        working-directory: triage
-
       - name: Terraform Plan
         run: terraform plan -out=tfplan
         working-directory: triage
@@ -79,7 +75,7 @@ jobs:
       - run: terraform init
         working-directory: triage
 
-      - run: terraform apply tfplan
+      - run: terraform destroy tfplan
         working-directory: triage
 
   # Production - plan
@@ -101,10 +97,6 @@ jobs:
       - name: Terraform Init
         run: terraform init
         working-directory: prod
-
-      - name: Terraform State Pull #TEMPORARY
-        run: terraform state pull
-        working-directory: triage
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
@@ -138,5 +130,5 @@ jobs:
       - run: terraform init
         working-directory: prod
 
-      - run: terraform apply tfplan
+      - run: terraform destroy tfplan
         working-directory: prod

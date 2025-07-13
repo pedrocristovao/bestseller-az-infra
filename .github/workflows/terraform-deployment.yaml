@@ -72,7 +72,8 @@ jobs:
           name: tfplan-triage
           path: triage
 
-      - run: terraform init
+      - name: Terraform Init
+        run: terraform init
         working-directory: triage
 
       - run: terraform apply tfplan

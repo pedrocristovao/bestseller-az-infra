@@ -43,7 +43,22 @@ The backend is created manually in Azure Console to prevent exposing sensitive c
 
 ## Function Code Upload
 
-The function code for each environment is uploaded via Azure CLI:
+You can upload the function code for each environment using the Azure CLI:
 
 ### Production Environment
 
+```bash
+az functionapp deployment source config-zip \
+  --resource-group <YourResourceGroupName> \
+  --name <YourFunctionAppName> \
+  --src <PathToYourFunctionCode.zip>
+```
+
+### Triage Environment
+
+```bash
+az functionapp deployment source config-zip \
+  --resource-group <YourResourceGroupName> \
+  --name <YourTriageFunctionAppName> \
+  --src <PathToYourTriageFunctionCode.zip>
+```

@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
 
 env:
   #Azure
@@ -136,6 +136,7 @@ jobs:
     name: Apply Production Plan
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
+    needs: terraform-production-plan
     environment:
       name: production-apply
     steps:

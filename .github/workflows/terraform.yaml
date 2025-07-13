@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  pull_requests:
+  pull_request:
     branches:
       - main
 
@@ -44,7 +44,7 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.TF_ARM_TENANT_ID }}
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: terraform plan -out=triage/tfplan
         working-directory: triage
 
   terraform-triage-apply:
@@ -53,6 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: triage-apply
+    if: github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -75,6 +76,15 @@ jobs:
       - name: Terraform Apply
         run: terraform apply tfplan
         working-directory: triage
+
+  approval:
+    name: Approval for apply
+    runs-on: ubuntu-latest
+    needs: terraform-triage-apply
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - name: Approval step
+        run: echo "Waiting for approval to apply changes in Triage environment."
 
   terraform-production-plan:
     name: Production Environment
@@ -107,7 +117,7 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.TF_ARM_TENANT_ID }}
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: terraform plan -out=prod/tfplan
         working-directory: prod
   
   terraform-production-apply:
@@ -116,6 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production-apply
+    if: github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -137,3 +148,12 @@ jobs:
       - name: Terraform Apply
         run: terraform apply tfplan
         working-directory: prod
+  
+  approval:
+    name: Approval for apply
+    runs-on: ubuntu-latest
+    needs: terraform-triage-apply
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - name: Approval step
+        run: echo "Waiting for approval to apply changes in Production environment."

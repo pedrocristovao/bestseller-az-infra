@@ -40,12 +40,7 @@ jobs:
         working-directory: triage
 
       - name: Terraform Init
-        run: |
-          terraform init \
-            -backend-config="resource_group_name=${TF_BACKEND_RG}" \
-            -backend-config="storage_account_name=${TF_BACKEND_STORAGE}" \
-            -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
-            -backend-config="key=${TF_BACKEND_KEY_TRIAGE}"
+      - run: terraform init
         working-directory: triage
 
       - name: Terraform Plan

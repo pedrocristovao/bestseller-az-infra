@@ -1,5 +1,4 @@
 locals {
-    environment = "production"
     prefix     = "prod"
     location    = "West Europe"
 }

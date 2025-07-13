@@ -1,4 +1,4 @@
-name: Terraform Plan and Apply
+name: Terraform Deployment
 
 on:
   push:
@@ -74,10 +74,7 @@ jobs:
     name: ⏳ Manual Approval
     runs-on: ubuntu-latest
     needs: plan
-    environment:
-      name: production-apply
-      deployment_branch_policy:
-        protected_branches: true
+    environment: production-apply
     steps:
       - name: Awaiting manual approval
         run: echo "Approve this step to apply the Terraform plans."

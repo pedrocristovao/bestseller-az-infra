@@ -30,7 +30,6 @@ jobs:
           else 
             echo "TFLint installed successfully."
           fi
-          sudo mv ./tflint /usr/local/bin/
 
       - name: Run TFLint
         run: tflint --init && tflint

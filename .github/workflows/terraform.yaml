@@ -96,7 +96,7 @@ jobs:
         working-directory: triage
 
 
-    terraform-production-plan:
+  terraform-production-plan:
     name: Plan Production Environment
     runs-on: ubuntu-latest
     steps:

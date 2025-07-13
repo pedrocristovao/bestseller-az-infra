@@ -22,14 +22,7 @@ jobs:
           terraform_version: 1.5.7
 
       - name: Install TFLint
-        run: |
-          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-          if [ ! -f /usr/local/bin/tflint ]; then
-            echo "TFLint installation failed."
-            exit 1
-          else 
-            echo "TFLint installed successfully."
-          fi
+        run: curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
 
       - name: Run TFLint
         run: tflint --init && tflint
@@ -98,17 +91,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.5.7
+
       - name: Install TFLint
-        run: |
-          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-          sudo mv tflint /usr/local/bin/
+        run: curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
       - name: Run TFLint
         run: tflint --init && tflint
         working-directory: prod
+        
       - name: Terraform Init
         run: |
           terraform init \  

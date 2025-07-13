@@ -23,9 +23,14 @@ jobs:
 
       - name: Install TFLint
         run: |
-          sudo apt-get update && sudo apt-get install -y tflint
-          # curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-          # sudo mv tflint /usr/local/bin/
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          if [ ! -f /usr/local/bin/tflint ]; then
+            echo "TFLint installation failed."
+            exit 1
+          else 
+            echo "TFLint installed successfully."
+          fi
+          sudo mv tflint /usr/local/bin/
 
       - name: Run TFLint
         run: tflint --init && tflint

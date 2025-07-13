@@ -1,0 +1,140 @@
+name: Terraform CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_requests:
+    branches:
+      - main
+
+jobs:
+  terraform-triage-plan:
+    name: Plan Triage Environment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.5.7
+
+      - name: Install TFLint
+        run: |
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          sudo mv tflint /usr/local/bin/
+
+      - name: Run TFLint
+        run: tflint --init && tflint
+        working-directory: triage
+
+      - name: Terraform Init
+        run: terraform init \  
+        -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RG }}" \
+        -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE }}" \
+        -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER }}" \
+        -backend-config="key=${{ secrets.TF_BACKEND_KEY_TRIAGE }}"
+        working-directory: triage
+        env:
+          ARM_CLIENT_ID: ${{ secrets.TF_ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.TF_ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.TF_ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.TF_ARM_TENANT_ID }}
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: triage
+
+  terraform-triage-apply:
+    name: Apply Triage Plan
+    needs: terraform-triage-plan
+    runs-on: ubuntu-latest
+    environment:
+      name: triage-apply
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.5.7
+
+      - name: Download Plan
+        uses: actions/download-artifact@v2
+        with:
+          name: tfplan
+          path: triage
+      
+      - name: terraform Init
+        run: terraform init
+        working-directory: triage
+
+      - name: Terraform Apply
+        run: terraform apply tfplan
+        working-directory: triage
+
+  terraform-production-plan:
+    name: Production Environment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.5.7
+      - name: Install TFLint
+        run: |
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          sudo mv tflint /usr/local/bin/
+      - name: Run TFLint
+        run: tflint --init && tflint
+        working-directory: prod
+      - name: Terraform Init
+        run: terraform init
+                run: terraform init \  
+        -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RG }}" \
+        -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE }}" \
+        -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER }}" \
+        -backend-config="key=${{ secrets.TF_BACKEND_KEY_PRODUCTION }}"
+        working-directory: prod
+        env:
+          ARM_CLIENT_ID: ${{ secrets.TF_ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.TF_ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.TF_ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.TF_ARM_TENANT_ID }}
+          
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: prod
+  
+  terraform-production-apply:
+    name: Apply Production Plan
+    needs: terraform-production-plan
+    runs-on: ubuntu-latest
+    environment:
+      name: production-apply
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.5.7
+
+      - name: Download Plan
+        uses: actions/download-artifact@v2
+        with:
+          name: tfplan
+      
+      - name: terraform Init
+        run: terraform init
+        working-directory: prod
+
+      - name: Terraform Apply
+        run: terraform apply tfplan
+        working-directory: prod

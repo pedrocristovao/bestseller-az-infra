@@ -38,8 +38,3 @@ module "function_app" {
     storage_account_name        = module.storage.name
     storage_account_access_key  = module.storage.primary_access_key
 }
-
-resource "azurerm_resource_group" "test" {
-  name     = "rg-test-${local.environment}"
-  location = local.location
-}

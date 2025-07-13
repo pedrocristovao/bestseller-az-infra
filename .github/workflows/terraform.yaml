@@ -57,7 +57,7 @@ jobs:
         working-directory: triage
 
       - name: Upload Plan
-        uses: actions/upload-artifact@v3.1.3
+        uses: github-actions/upload-artifact@v3.1.3
         with:
           name: tfplan
           path: triage/tfplan
@@ -88,7 +88,7 @@ jobs:
           terraform_version: 1.5.7
 
       - name: Download Plan
-        uses: actions/download-artifact@v3.1.2
+        uses: github-actions/download-artifact@v3.1.2
         with:
           name: tfplan
           path: triage

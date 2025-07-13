@@ -30,7 +30,7 @@ jobs:
 
       - name: Terraform Init
         run: |
-          terraform init \  
+          terraform init   
           -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RG }}" \
           -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE }}" \
           -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER }}" \
@@ -103,7 +103,7 @@ jobs:
       - name: Run TFLint
         run: tflint --init && tflint
         working-directory: prod
-        
+
       - name: Terraform Init
         run: |
           terraform init \  

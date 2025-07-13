@@ -43,6 +43,10 @@ jobs:
         run: terraform init
         working-directory: triage
 
+      - name: Terraform State Pull #TEMPORARY
+        run: terraform state pull
+        working-directory: triage
+
       - name: Terraform Plan
         run: terraform plan -out=tfplan
         working-directory: triage
@@ -95,13 +99,12 @@ jobs:
         working-directory: prod
 
       - name: Terraform Init
-        run: |
-          terraform init \
-            -backend-config="resource_group_name=${TF_BACKEND_RG}" \
-            -backend-config="storage_account_name=${TF_BACKEND_STORAGE}" \
-            -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
-            -backend-config="key=${TF_BACKEND_KEY_PRODUCTION}"
+        run: terraform init
         working-directory: prod
+
+      - name: Terraform State Pull #TEMPORARY
+        run: terraform state pull
+        working-directory: triage
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan

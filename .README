@@ -2,3 +2,10 @@ the backend was created manually via console in order not to expose credentials 
 storage name:
 container name:
 ...
+
+to set the backend locally you need to:
+
+
+the function code was uploaded via CLI on azure. Each environment has its own function code. The upload was made using this commands:
+
+- 

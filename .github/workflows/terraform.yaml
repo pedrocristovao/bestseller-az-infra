@@ -56,6 +56,21 @@ jobs:
         run: terraform plan -out=tfplan
         working-directory: triage
 
+      - name: Upload Plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan
+          path: triage/tfplan
+
+  approval-triage:
+    name: Approval for apply
+    runs-on: ubuntu-latest
+    needs: terraform-triage-apply
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - name: Approval step
+        run: echo "Waiting for approval to apply changes in Triage environment."
+
   terraform-triage-apply:
     name: Apply Triage Plan
     needs: terraform-triage-plan
@@ -73,7 +88,7 @@ jobs:
           terraform_version: 1.5.7
 
       - name: Download Plan
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: tfplan
           path: triage
@@ -85,15 +100,6 @@ jobs:
       - name: Terraform Apply
         run: terraform apply tfplan
         working-directory: triage
-
-  approval-triage:
-    name: Approval for apply
-    runs-on: ubuntu-latest
-    needs: terraform-triage-apply
-    if: ${{ github.event_name == 'push' }}
-    steps:
-      - name: Approval step
-        run: echo "Waiting for approval to apply changes in Triage environment."
 
   terraform-production-plan:
     name: Production Environment

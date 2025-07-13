@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 env:
   #Azure
@@ -62,22 +63,15 @@ jobs:
           name: tfplan
           path: triage/tfplan
 
-  approval-triage:
-    name: Approval for apply
-    runs-on: ubuntu-latest
-    needs: terraform-triage-apply
-    if: ${{ github.event_name == 'push' }}
-    steps:
-      - name: Approval step
-        run: echo "Waiting for approval to apply changes in Triage environment."
 
   terraform-triage-apply:
     name: Apply Triage Plan
+    if: github.event_name == 'workflow_dispatch' 
     needs: terraform-triage-plan
     runs-on: ubuntu-latest
     environment:
       name: triage-apply
-    if: github.event_name == 'push'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -101,15 +95,14 @@ jobs:
         run: terraform apply tfplan
         working-directory: triage
 
-  terraform-production-plan:
-    name: Production Environment
+
+    terraform-production-plan:
+    name: Plan Production Environment
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v1
+      - uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.5.7
 
@@ -122,59 +115,49 @@ jobs:
 
       - name: Terraform Init
         run: |
-          terraform init \  
-          -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RG }}" \
-          -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE }}" \
-          -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER }}" \
-          -backend-config="key=${{ secrets.TF_BACKEND_KEY_PRODUCTION }}"
+          terraform init \
+          -backend-config="resource_group_name=${TF_BACKEND_RG}" \
+          -backend-config="storage_account_name=${TF_BACKEND_STORAGE}" \
+          -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
+          -backend-config="key=${TF_BACKEND_KEY_PRODUCTION}"
         working-directory: prod
-        env:
-          ARM_CLIENT_ID: ${{ secrets.TF_ARM_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.TF_ARM_CLIENT_SECRET }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.TF_ARM_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.TF_ARM_TENANT_ID }}
 
       - name: Terraform Plan
         run: terraform plan -out=prod/tfplan
         working-directory: prod
-  
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-tfplan
+          path: prod/tfplan
+
   terraform-production-apply:
     name: Apply Production Plan
-    needs: terraform-production-plan
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
     environment:
       name: production-apply
-    if: github.event_name == 'push'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v1
+      - uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.5.7
 
-      - name: Download Plan
-        uses: actions/download-artifact@v2
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
         with:
-          name: tfplan
-      
-      - name: terraform Init
+          name: prod-tfplan
+          path: prod
+
+      - name: Terraform Init
         run: terraform init
         working-directory: prod
 
       - name: Terraform Apply
         run: terraform apply tfplan
         working-directory: prod
-  
-  approval-production:
-    name: Approval for apply
-    runs-on: ubuntu-latest
-    needs: terraform-triage-apply
-    if: ${{ github.event_name == 'push' }}
-    steps:
-      - name: Approval step
-        run: echo "Waiting for approval to apply changes in Production environment."
 
 
 

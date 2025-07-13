@@ -1,8 +1,11 @@
-name: Terraform Deployment
+name: Terraform CI/CD Pipeline
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 env:
   # Azure Credentials
@@ -11,7 +14,7 @@ env:
   ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
 
-  # Backend Configuration
+  # Backend Credentials
   TF_BACKEND_RG: ${{ secrets.TF_BACKEND_RG }}
   TF_BACKEND_STORAGE: ${{ secrets.TF_BACKEND_STORAGE }}
   TF_BACKEND_CONTAINER: ${{ secrets.TF_BACKEND_CONTAINER }}
@@ -19,28 +22,24 @@ env:
   TF_BACKEND_KEY_PRODUCTION: ${{ secrets.TF_BACKEND_KEY_PRODUCTION }}
 
 jobs:
-  plan:
-    name: Terraform Plan
-    runs-on: ubuntu-latest
-    outputs:
-      plan-ready: ${{ steps.set-output.outputs.ready }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+  # Triage - PLAN
+  plan-triage:
+    name: Plan Triage Environment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.5.7
 
-      - name: Install TFLint
-        run: curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+      - run: curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
 
-      - name: TFLint - Triage
-        run: tflint --init && tflint
+      - run: tflint --init && tflint
         working-directory: triage
 
-      - name: Terraform Init - Triage
+      - name: Terraform Init
         run: |
           terraform init \
             -backend-config="resource_group_name=${TF_BACKEND_RG}" \
@@ -49,15 +48,58 @@ jobs:
             -backend-config="key=${TF_BACKEND_KEY_TRIAGE}"
         working-directory: triage
 
-      - name: Terraform Plan - Triage
+      - name: Terraform Plan
         run: terraform plan -out=tfplan
         working-directory: triage
 
-      - name: TFLint - Prod
-        run: tflint --init && tflint
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-triage
+          path: triage/tfplan
+
+  # Triage - APPLY (requires manual approval via environment)
+  apply-triage:
+    name: Apply Triage Environment
+    runs-on: ubuntu-latest
+    needs: plan-triage
+    environment: triage-apply
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.5.7
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan-triage
+          path: triage
+
+      - run: terraform init
+        working-directory: triage
+
+      - run: terraform apply tfplan
+        working-directory: triage
+
+  # Production - PLAN
+  plan-production:
+    name: Plan Production Environment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.5.7
+
+      - run: curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+      - run: tflint --init && tflint
         working-directory: prod
 
-      - name: Terraform Init - Prod
+      - name: Terraform Init
         run: |
           terraform init \
             -backend-config="resource_group_name=${TF_BACKEND_RG}" \
@@ -66,48 +108,37 @@ jobs:
             -backend-config="key=${TF_BACKEND_KEY_PRODUCTION}"
         working-directory: prod
 
-      - name: Terraform Plan - Prod
+      - name: Terraform Plan
         run: terraform plan -out=tfplan
         working-directory: prod
 
-  wait-approval:
-    name: ⏳ Manual Approval
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-production
+          path: prod/tfplan
+
+  # Production - APPLY (requires manual approval via environment)
+  apply-production:
+    name: Apply Production Environment
     runs-on: ubuntu-latest
-    needs: plan
+    needs: plan-production
     environment: production-apply
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     steps:
-      - name: Awaiting manual approval
-        run: echo "Approve this step to apply the Terraform plans."
+      - uses: actions/checkout@v2
 
-  apply:
-    name: Terraform Apply (Triage & Production)
-    runs-on: ubuntu-latest
-    needs: [plan, wait-approval]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+      - uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.5.7
 
-      - name: Terraform Init + Apply - Triage
-        working-directory: triage
-        run: |
-          terraform init \
-            -backend-config="resource_group_name=${TF_BACKEND_RG}" \
-            -backend-config="storage_account_name=${TF_BACKEND_STORAGE}" \
-            -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
-            -backend-config="key=${TF_BACKEND_KEY_TRIAGE}"
-          terraform apply -auto-approve
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan-production
+          path: prod
 
-      - name: Terraform Init + Apply - Prod
+      - run: terraform init
         working-directory: prod
-        run: |
-          terraform init \
-            -backend-config="resource_group_name=${TF_BACKEND_RG}" \
-            -backend-config="storage_account_name=${TF_BACKEND_STORAGE}" \
-            -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
-            -backend-config="key=${TF_BACKEND_KEY_PRODUCTION}"
-          terraform apply -auto-approve
+
+      - run: terraform apply tfplan
+        working-directory: prod

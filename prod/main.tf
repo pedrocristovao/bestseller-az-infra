@@ -1,19 +1,19 @@
 locals {
-    prefix     = "prod"
+    environment     = "prod"
     location    = "West Europe"
 }
 
 module "rg" {
     source  = "../modules/resource_group"
 
-    name    = "rg-hello-${local.prefix}"
+    name    = "rg-hello-${local.environment}"
     location = local.location
 }
 
 module "storage" {
     source              = "../modules/storage_account"
 
-    name                = "storagehello${local.prefix}"
+    name                = "storagehello${local.environment}"
     resource_group_name = module.rg.name
     location            = module.rg.location
 }
@@ -21,7 +21,7 @@ module "storage" {
 module "app_plan" {
     source              = "../modules/app_service_plan"
 
-    name                = "plan-hello-${local.prefix}"
+    name                = "plan-hello-${local.environment}"
     location            = local.location
     resource_group_name = module.rg.name
     os_type            = "Linux"
@@ -31,7 +31,7 @@ module "app_plan" {
 module "function_app" {
     source                      = "../modules/function_app"
 
-    name                        = "func-hello-${local.prefix}"
+    name                        = "func-hello-${local.environment}"
     resource_group_name         = module.rg.name
     location                    = module.rg.location
     service_plan_id             = module.app_plan.id

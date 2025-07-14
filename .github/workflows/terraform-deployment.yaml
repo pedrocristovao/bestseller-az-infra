@@ -1,3 +1,137 @@
+# name: Terraform CI/CD Pipeline
+
+# on:
+#   push:
+#     branches: [main]
+#   pull_request:
+#     branches: [main]
+#   workflow_dispatch:
+
+# env:
+#   # Azure Credentials
+#   ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+#   ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+#   ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+#   ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+
+#   # Backend Credentials
+#   TF_BACKEND_RG: ${{ secrets.TF_BACKEND_RG }}
+#   TF_BACKEND_STORAGE: ${{ secrets.TF_BACKEND_STORAGE }}
+#   TF_BACKEND_CONTAINER: ${{ secrets.TF_BACKEND_CONTAINER }}
+#   TF_BACKEND_KEY_TRIAGE: ${{ secrets.TF_BACKEND_KEY_TRIAGE }}
+#   TF_BACKEND_KEY_PRODUCTION: ${{ secrets.TF_BACKEND_KEY_PRODUCTION }}
+
+# jobs:
+
+#   # Triage - plan
+#   plan-triage:
+#     name: Plan Triage
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+
+#       - uses: hashicorp/setup-terraform@v1
+#         with:
+#           terraform_version: 1.5.7
+
+#       - run: curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+#       - run: tflint --init && tflint
+#         working-directory: triage
+
+#       - name: Terraform Init
+#         run: terraform init
+#         working-directory: triage
+
+#       - name: Terraform Plan
+#         run: terraform plan -out=tfplan
+#         working-directory: triage
+
+#       - name: Upload Plan
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: tfplan-triage
+#           path: triage/tfplan
+
+#   # Triage - apply (requires manual action via environment)
+#   apply-triage:
+#     name: Apply Triage
+#     runs-on: ubuntu-latest
+#     needs: plan-triage
+#     environment: triage-apply
+#     steps:
+#       - uses: actions/checkout@v2
+
+#       - uses: hashicorp/setup-terraform@v1
+#         with:
+#           terraform_version: 1.5.7
+
+#       - uses: actions/download-artifact@v4
+#         with:
+#           name: tfplan-triage
+#           path: triage
+
+#       - run: terraform init
+#         working-directory: triage
+
+#       - run: terraform apply tfplan
+#         working-directory: triage
+
+#   # Production - plan
+#   plan-production:
+#     name: Plan Production
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+
+#       - uses: hashicorp/setup-terraform@v1
+#         with:
+#           terraform_version: 1.5.7
+
+#       - run: curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+#       - run: tflint --init && tflint
+#         working-directory: prod
+
+#       - name: Terraform Init
+#         run: terraform init
+#         working-directory: prod
+
+#       - name: Terraform Plan
+#         run: terraform plan -out=tfplan
+#         working-directory: prod
+
+#       - name: Upload Plan
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: tfplan-production
+#           path: prod/tfplan
+
+#   # Production - apply (requires manual action via environment)
+#   apply-production:
+#     name: Apply Production
+#     runs-on: ubuntu-latest
+#     needs: plan-production
+#     environment: production-apply
+#     steps:
+#       - uses: actions/checkout@v2
+
+#       - uses: hashicorp/setup-terraform@v1
+#         with:
+#           terraform_version: 1.5.7
+
+#       - uses: actions/download-artifact@v4
+#         with:
+#           name: tfplan-production
+#           path: prod
+
+#       - run: terraform init
+#         working-directory: prod
+
+#       - run: terraform apply tfplan
+#         working-directory: prod
+
+
 name: Terraform CI/CD Pipeline
 
 on:
@@ -5,7 +139,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:
+  workflow_dispatch: 
 
 env:
   # Azure Credentials
@@ -23,10 +157,11 @@ env:
 
 jobs:
 
-  # Triage - plan
+  # Plan Triage
   plan-triage:
     name: Plan Triage
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v2
 
@@ -53,11 +188,12 @@ jobs:
           name: tfplan-triage
           path: triage/tfplan
 
-  # Triage - apply (requires manual action via environment)
+  # Apply Triage (manual, só na main)
   apply-triage:
     name: Apply Triage
     runs-on: ubuntu-latest
     needs: plan-triage
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     environment: triage-apply
     steps:
       - uses: actions/checkout@v2
@@ -77,10 +213,11 @@ jobs:
       - run: terraform apply tfplan
         working-directory: triage
 
-  # Production - plan
+  # Plan Production
   plan-production:
     name: Plan Production
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v2
 
@@ -107,11 +244,12 @@ jobs:
           name: tfplan-production
           path: prod/tfplan
 
-  # Production - apply (requires manual action via environment)
+  # Apply Production (manual, só na main)
   apply-production:
     name: Apply Production
     runs-on: ubuntu-latest
     needs: plan-production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     environment: production-apply
     steps:
       - uses: actions/checkout@v2
@@ -130,3 +268,4 @@ jobs:
 
       - run: terraform apply tfplan
         working-directory: prod
+

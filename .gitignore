@@ -3,7 +3,7 @@
 *terraform.tfstate
 *.tfstate
 *.tfstate.backup
-.backend.tf
+backend.tf
 
 #Azure
 *.zip

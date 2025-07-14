@@ -1,47 +1,47 @@
-locals {
-    environment = "triage"
-    location    = "West Europe"
-}
+# locals {
+#     environment = "triage"
+#     location    = "West Europe"
+# }
 
-module "rg" {
-    source  = "../modules/resource_group"
+# module "rg" {
+#     source  = "../modules/resource_group"
 
-    name    = "rg-hello-${local.environment}"
-    location = local.location
-}
+#     name    = "rg-hello-${local.environment}"
+#     location = local.location
+# }
 
-module "storage" {
-    source              = "../modules/storage_account"
+# module "storage" {
+#     source              = "../modules/storage_account"
 
-    name                = "storagehello${local.environment}"
-    resource_group_name = module.rg.name
-    location            = module.rg.location
-}
+#     name                = "storagehello${local.environment}"
+#     resource_group_name = module.rg.name
+#     location            = module.rg.location
+# }
 
-module "app_plan" {
-    source              = "../modules/app_service_plan"
+# module "app_plan" {
+#     source              = "../modules/app_service_plan"
 
-    name                = "plan-hello-${local.environment}"
-    location            = local.location
-    resource_group_name = module.rg.name
-    os_type            = "Linux"
-    sku_name           = "Y1"
-}
+#     name                = "plan-hello-${local.environment}"
+#     location            = local.location
+#     resource_group_name = module.rg.name
+#     os_type            = "Linux"
+#     sku_name           = "Y1"
+# }
 
-module "function_app" {
-    source                      = "../modules/function_app"
+# module "function_app" {
+#     source                      = "../modules/function_app"
 
-    name                        = "func-hello-${local.environment}"
-    resource_group_name         = module.rg.name
-    location                    = module.rg.location
-    service_plan_id             = module.app_plan.id
-    storage_account_name        = module.storage.name
-    storage_account_access_key  = module.storage.primary_access_key
-}
+#     name                        = "func-hello-${local.environment}"
+#     resource_group_name         = module.rg.name
+#     location                    = module.rg.location
+#     service_plan_id             = module.app_plan.id
+#     storage_account_name        = module.storage.name
+#     storage_account_access_key  = module.storage.primary_access_key
+# }
 
-module "resource_group" {
-    source  = "../modules/resource_group"
+# module "resource_group" {
+#     source  = "../modules/resource_group"
 
-    name    = "rg-test-${local.environment}"
-    location = local.location
-}
+#     name    = "rg-test-${local.environment}"
+#     location = local.location
+# }

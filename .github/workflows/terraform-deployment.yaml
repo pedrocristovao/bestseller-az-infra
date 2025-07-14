@@ -46,7 +46,9 @@ jobs:
         working-directory: triage
 
       - name: Terraform Plan
-        run: terraform plan -detailed-exitcode -out=tfplan echo "exit_code=$?" >> $GITHUB_OUTPUT
+        run: |
+          terraform plan -detailed-exitcode -out=tfplan
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
         working-directory: triage
 
       - name: Upload Plan
